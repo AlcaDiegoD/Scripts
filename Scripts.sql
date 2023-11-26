@@ -193,27 +193,65 @@ END eliminar_producto;
 -- Ejecutable desde base como: 
 -----
 EXEC eliminar_producto('codigo_producto');
+
+
+
 -----
--- Consultar y listar procutos: 
+-- Consultar y listar procutos como tabla: 
 -----
+CREATE TYPE tipo_producto AS OBJECT (
+    codigo VARCHAR2(5),
+    descripcion VARCHAR2(100),
+    precio_unitario NUMBER
+);
+/
+
+CREATE TYPE tabla_producto AS TABLE OF tipo_producto;
+/
+CREATE OR REPLACE FUNCTION listar_productos RETURN tabla_producto
+AS
+    v_productos tabla_producto := tabla_producto();
+BEGIN
+    FOR registro IN (SELECT codigo, descripcion, precio_unitario FROM producto) LOOP
+        v_productos.EXTEND;
+        v_productos(v_productos.COUNT) := tipo_producto(registro.codigo, registro.descripcion, registro.precio_unitario);
+    END LOOP;
+    RETURN v_productos;
+END listar_productos;
+-----
+-- ejecutar: 
+-----
+SELECT * FROM TABLE(listar_productos());
 
 
+-----
+-- Consultar y listar prodcutos individuales: 
+-----
+CREATE OR REPLACE PROCEDURE mostrar_producto_info(p_codigo VARCHAR2)
+AS
+    CURSOR cur_producto IS
+        SELECT codigo, descripcion, precio_unitario
+        FROM producto
+        WHERE codigo = p_codigo;
+    registro_producto cur_producto%ROWTYPE;
+BEGIN
+    OPEN cur_producto;
+    FETCH cur_producto INTO registro_producto;
 
+    IF cur_producto%FOUND THEN
+        DBMS_OUTPUT.PUT_LINE('Código: ' || registro_producto.codigo);
+        DBMS_OUTPUT.PUT_LINE('Descripción: ' || registro_producto.descripcion);
+        DBMS_OUTPUT.PUT_LINE('Precio Unitario: ' || registro_producto.precio_unitario);
+    ELSE
+        DBMS_OUTPUT.PUT_LINE('No se encontró un producto con el código ' || p_codigo);
+    END IF;
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+    CLOSE cur_producto;
+END mostrar_producto_info;
+-----
+-- ejecutar: 
+-----
+EXEC mostrar_producto_info('codigo_del_producto');
 
 
 
